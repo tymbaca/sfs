@@ -2,39 +2,18 @@ package sfs
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
 	"sync"
+
+	"github.com/tymbaca/sfs/internal/chunk"
 )
 
 type Client struct {
 	addrs     []string
 	chunkSize uint64 // bytes
-}
-
-type chunk struct {
-	ID       uint64
-	Filename string
-	Size     uint64
-	Body     []byte
-}
-
-const chunkFmt = `{
-        ID: %d,
-        Filename: %s,
-        Size: %d,
-        Body (utf-8): 
-============================
-%s
-============================
-}`
-
-func (ch chunk) String() string {
-	return fmt.Sprintf(chunkFmt, ch.ID, ch.Filename, ch.Size, ch.Body)
 }
 
 func NewClient(addrs string, chunkSize uint64) *Client {
@@ -64,7 +43,7 @@ func (c *Client) Upload(ctx context.Context, name string, r io.Reader) error {
 	return nil
 }
 
-func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk) error {
+func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk.Chunk) error {
 	var wg sync.WaitGroup
 	wg.Add(len(conns))
 
@@ -72,8 +51,8 @@ func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk) erro
 		conn := conn
 		go func() {
 			defer wg.Done()
-			for chunk := range chunks {
-				err := writeChunk(conn, chunk)
+			for chk := range chunks {
+				err := chunk.WriteChunk(conn, chk)
 				if err != nil {
 					panic(err)
 				}
@@ -84,91 +63,6 @@ func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk) erro
 	wg.Wait()
 
 	return nil
-}
-
-func writeChunk(w io.Writer, chunk chunk) error {
-	if _, err := w.Write([]byte("$")); err != nil {
-		return err
-	}
-
-	// we need len of bytes, not len of utf-8 symbols, so we use [len]
-	if err := binary.Write(w, binary.LittleEndian, uint64(len(chunk.Filename))); err != nil {
-		return err
-	}
-
-	if _, err := w.Write([]byte(chunk.Filename)); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w, binary.LittleEndian, chunk.ID); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w, binary.LittleEndian, chunk.Size); err != nil {
-		return err
-	}
-
-	if _, err := w.Write(chunk.Body); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-const _delimiter = '$'
-
-func ReadChunk(r io.Reader) (chunk, error) {
-	delim := make([]byte, 1)
-	_, err := r.Read(delim)
-	if err != nil {
-		return chunk{}, fmt.Errorf("can't read first byte of chunk: %w", err)
-	}
-
-	if delim[0] != '$' {
-		return chunk{}, fmt.Errorf("incorrect delimiter, expected: '%s', got '%s'", string(_delimiter), delim)
-	}
-
-	var filenameSize uint64
-	if err := binary.Read(r, binary.LittleEndian, &filenameSize); err != nil {
-		return chunk{}, fmt.Errorf("can't read filename size from chunk: %w", err)
-	}
-
-	filename := make([]byte, filenameSize)
-	n, err := r.Read(filename)
-	if err != nil {
-		return chunk{}, fmt.Errorf("can't read filename from chunk: %w", err)
-	}
-
-	if n < int(filenameSize) {
-		return chunk{}, fmt.Errorf("can't read filename from chunk: got (%d) less then expected (%d)", n, filenameSize)
-	}
-
-	var id uint64
-	if err := binary.Read(r, binary.LittleEndian, &id); err != nil {
-		return chunk{}, fmt.Errorf("can't read ID from chunk: %w", err)
-	}
-
-	var bodySize uint64
-	if err := binary.Read(r, binary.LittleEndian, &bodySize); err != nil {
-		return chunk{}, fmt.Errorf("can't read body size from chunk: %w", err)
-	}
-
-	body := make([]byte, bodySize)
-	n, err = r.Read(body)
-	if err != nil {
-		return chunk{}, fmt.Errorf("can't read body from chunk: %w", err)
-	}
-
-	if n < int(bodySize) {
-		return chunk{}, fmt.Errorf("can't read body from chunk: got (%d) less then expected (%d)", n, bodySize)
-	}
-
-	return chunk{
-		ID:       id,
-		Filename: string(filename),
-		Size:     bodySize,
-		Body:     body,
-	}, nil
 }
 
 func (c *Client) connect(_ context.Context) ([]net.Conn, error) {
@@ -186,12 +80,12 @@ func (c *Client) connect(_ context.Context) ([]net.Conn, error) {
 	return conns, nil
 }
 
-func formChunks(r io.Reader, name string, size uint64) (<-chan chunk, error) {
+func formChunks(r io.Reader, name string, size uint64) (<-chan chunk.Chunk, error) {
 	if size < 1 {
 		panic("can't split byte non-positive size")
 	}
 
-	ch := make(chan chunk)
+	ch := make(chan chunk.Chunk)
 	go func() {
 		defer close(ch)
 		for id := 0; ; id++ {
@@ -205,7 +99,7 @@ func formChunks(r io.Reader, name string, size uint64) (<-chan chunk, error) {
 				panic("shit happens")
 			}
 
-			ch <- chunk{
+			ch <- chunk.Chunk{
 				ID:       uint64(id),
 				Filename: name,
 				Size:     uint64(n),

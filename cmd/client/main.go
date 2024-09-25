@@ -10,6 +10,7 @@ import (
 	"time"
 
 	sfs "github.com/tymbaca/sfs/client"
+	"github.com/tymbaca/sfs/internal/chunk"
 )
 
 const (
@@ -22,7 +23,7 @@ func main() {
 	ctx := context.Background()
 
 	go func() {
-		lis, err := net.Listen("tcp", "localhost:6886")
+		lis, err := net.Listen("tcp", ":6886")
 		if err != nil {
 			panic(err)
 		}
@@ -34,7 +35,7 @@ func main() {
 			}
 
 			for {
-				chunk, err := sfs.ReadChunk(conn)
+				chunk, err := chunk.ReadChunk(conn)
 				if err != nil {
 					if errors.Is(err, io.EOF) {
 						break
@@ -47,13 +48,13 @@ func main() {
 		}
 	}()
 
-	f, err := os.Open("input.txt")
+	f, err := os.Open("cmd/client/main.go")
 	if err != nil {
 		panic(err)
 	}
 
-	client := sfs.NewClient("localhost:6886", 1*KiB)
-	err = client.Upload(ctx, "shit.txt", f)
+	client := sfs.NewClient("localhost:6886", 256)
+	err = client.Upload(ctx, "man/file", f)
 	if err != nil {
 		panic(err)
 	}
