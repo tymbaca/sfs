@@ -23,6 +23,20 @@ type chunk struct {
 	Body     []byte
 }
 
+const chunkFmt = `{
+        ID: %d,
+        Filename: %s,
+        Size: %d,
+        Body (utf-8): 
+============================
+%s
+============================
+}`
+
+func (ch chunk) String() string {
+	return fmt.Sprintf(chunkFmt, ch.ID, ch.Filename, ch.Size, ch.Body)
+}
+
 func NewClient(addrs string, chunkSize uint64) *Client {
 	return &Client{
 		addrs:     strings.Split(addrs, ","),

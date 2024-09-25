@@ -42,7 +42,7 @@ func main() {
 					panic(err)
 				}
 
-				fmt.Printf("server: got chunk: %v\n", chunk)
+				fmt.Printf("server: got chunk: %s\n", chunk)
 			}
 		}
 	}()
