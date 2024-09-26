@@ -3,6 +3,7 @@ package sfs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -35,6 +36,7 @@ func (c *Client) Upload(ctx context.Context, name string, r io.Reader) error {
 	}
 	defer closeConns(conns)
 
+	fmt.Println("starting to upload chunks of file:", name)
 	err = uploadChunks(ctx, conns, chunks)
 	if err != nil {
 		return err

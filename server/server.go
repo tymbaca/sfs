@@ -1,4 +1,4 @@
-package server
+package sfs
 
 import (
 	"context"
@@ -12,17 +12,17 @@ import (
 )
 
 type Server struct {
-	addr string
-	// connPoolSize uint64 // TODO
-	// connPool     uint64
-	storage storage
+	addr     string
+	connPool chan struct{}
+	storage  storage
 }
 
-func New(addr string) *Server {
+func New(addr string, storage storage) *Server {
+	connPoolSize := 10
 	return &Server{
-		addr: addr,
-		// connPoolSize: 10,
-		// connPool:     0,
+		addr:     addr,
+		connPool: make(chan struct{}, connPoolSize),
+		storage:  storage,
 	}
 }
 
@@ -39,11 +39,21 @@ func (s *Server) Run() error {
 			panic(err)
 		}
 
+		s.queue()
 		go s.handleConn(ctx, conn)
 	}
 }
 
+func (s *Server) queue() {
+	s.connPool <- struct{}{}
+}
+
+func (s *Server) unqueue() {
+	<-s.connPool
+}
+
 func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
+	defer s.unqueue()
 	for {
 		// TODO add timeout
 		chunk, err := chunk.ReadChunk(conn)
