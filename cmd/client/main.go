@@ -19,8 +19,7 @@ const (
 	GiB        = MiB << 10
 )
 
-type logStorage struct {
-}
+type logStorage struct{}
 
 func (s logStorage) StoreChunk(ctx context.Context, chunk chunk.Chunk) error {
 	fmt.Printf("server: chunk: %s\n", chunk)

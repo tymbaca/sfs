@@ -1,7 +1,9 @@
 package chunkio
 
 import (
+	"fmt"
 	"io"
+	"os"
 )
 
 func Split(r io.ReaderAt, totalSize, chunkSize int64) []*Reader {
@@ -20,6 +22,17 @@ func Split(r io.ReaderAt, totalSize, chunkSize int64) []*Reader {
 	}
 
 	return chunks
+}
+
+func SplitFile(f *os.File, chunkSize int64) ([]*Reader, error) {
+	stat, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("can't split file into chunks: %w", err)
+	}
+
+	size := stat.Size()
+
+	return Split(f, size, chunkSize), nil
 }
 
 // Four different cases:
