@@ -11,3 +11,7 @@ Where:
 - `filename` is []byte with len of `filename_size`, containing the name
   of uploading file
 - `data` is []byte with len of `size` containing the `id`'th chunk of file
+
+## Progress
+- [ ] Download File 
+	- multiReader?
