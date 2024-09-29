@@ -24,19 +24,19 @@ func TestSplit(t *testing.T) {
 			n, err := r1.Read(buf)
 
 			require.Equal(t, 3, n)
-			require.Equal(t, buf[:n], []byte("1--"))
+			require.Equal(t, []byte("1--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r1.Read(buf)
 
 			require.Equal(t, 2, n)
-			require.Equal(t, buf[:n], []byte("--"))
+			require.Equal(t, []byte("--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r1.Read(buf)
 
 			require.Equal(t, 0, n)
-			require.Equal(t, buf[:n], []byte(""))
+			require.Equal(t, []byte(""), buf[:n])
 			require.ErrorIs(t, err, io.EOF)
 		})
 
@@ -45,19 +45,19 @@ func TestSplit(t *testing.T) {
 			n, err := r2.Read(buf)
 
 			require.Equal(t, 3, n)
-			require.Equal(t, buf[:n], []byte("2--"))
+			require.Equal(t, []byte("2--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r2.Read(buf)
 
 			require.Equal(t, 2, n)
-			require.Equal(t, buf[:n], []byte("--"))
+			require.Equal(t, []byte("--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r2.Read(buf)
 
 			require.Equal(t, 0, n)
-			require.Equal(t, buf[:n], []byte(""))
+			require.Equal(t, []byte(""), buf[:n])
 			require.ErrorIs(t, err, io.EOF)
 		})
 
@@ -66,19 +66,19 @@ func TestSplit(t *testing.T) {
 			n, err := r3.Read(buf)
 
 			require.Equal(t, 3, n)
-			require.Equal(t, buf[:n], []byte("3--"))
+			require.Equal(t, []byte("3--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r3.Read(buf)
 
 			require.Equal(t, 2, n)
-			require.Equal(t, buf[:n], []byte("--"))
+			require.Equal(t, []byte("--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r3.Read(buf)
 
 			require.Equal(t, 0, n)
-			require.Equal(t, buf[:n], []byte(""))
+			require.Equal(t, []byte(""), buf[:n])
 			require.ErrorIs(t, err, io.EOF)
 		})
 	})
@@ -96,7 +96,7 @@ func TestSplit(t *testing.T) {
 		n, err := r3.Read(buf)
 		require.NoError(t, err)
 		require.Equal(t, 3, int(n)) // last readers must provide 3 bytes
-		require.Equal(t, buf[:n], []byte("3--"))
+		require.Equal(t, []byte("3--"), buf[:n])
 	})
 }
 
@@ -114,19 +114,19 @@ func TestReader(t *testing.T) {
 			n, err := r1.Read(buf)
 
 			require.Equal(t, 3, n)
-			require.Equal(t, buf[:n], []byte("1--"))
+			require.Equal(t, []byte("1--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r1.Read(buf)
 
 			require.Equal(t, 2, n)
-			require.Equal(t, buf[:n], []byte("--"))
+			require.Equal(t, []byte("--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r1.Read(buf)
 
 			require.Equal(t, 0, n)
-			require.Equal(t, buf[:n], []byte(""))
+			require.Equal(t, []byte(""), buf[:n])
 			require.ErrorIs(t, err, io.EOF)
 		})
 
@@ -135,19 +135,19 @@ func TestReader(t *testing.T) {
 			n, err := r2.Read(buf)
 
 			require.Equal(t, 3, n)
-			require.Equal(t, buf[:n], []byte("2--"))
+			require.Equal(t, []byte("2--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r2.Read(buf)
 
 			require.Equal(t, 2, n)
-			require.Equal(t, buf[:n], []byte("--"))
+			require.Equal(t, []byte("--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r2.Read(buf)
 
 			require.Equal(t, 0, n)
-			require.Equal(t, buf[:n], []byte(""))
+			require.Equal(t, []byte(""), buf[:n])
 			require.ErrorIs(t, err, io.EOF)
 		})
 
@@ -156,19 +156,19 @@ func TestReader(t *testing.T) {
 			n, err := r3.Read(buf)
 
 			require.Equal(t, 3, n)
-			require.Equal(t, buf[:n], []byte("3--"))
+			require.Equal(t, []byte("3--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r3.Read(buf)
 
 			require.Equal(t, 2, n)
-			require.Equal(t, buf[:n], []byte("--"))
+			require.Equal(t, []byte("--"), buf[:n])
 			require.NoError(t, err)
 
 			n, err = r3.Read(buf)
 
 			require.Equal(t, 0, n)
-			require.Equal(t, buf[:n], []byte(""))
+			require.Equal(t, []byte(""), buf[:n])
 			require.ErrorIs(t, err, io.EOF)
 		})
 	})
@@ -187,47 +187,47 @@ func TestReader(t *testing.T) {
 
 		n, err := r1.Read(buf1)
 		require.Equal(t, 3, n)
-		require.Equal(t, buf1[:n], []byte("1--"))
+		require.Equal(t, []byte("1--"), buf1[:n])
 		require.NoError(t, err)
 
 		n, err = r2.Read(buf2)
 		require.Equal(t, 3, n)
-		require.Equal(t, buf2[:n], []byte("2--"))
+		require.Equal(t, []byte("2--"), buf2[:n])
 		require.NoError(t, err)
 
 		n, err = r3.Read(buf3)
 		require.Equal(t, 3, n)
-		require.Equal(t, buf3[:n], []byte("3--"))
+		require.Equal(t, []byte("3--"), buf3[:n])
 		require.NoError(t, err)
 
 		n, err = r1.Read(buf1)
 		require.Equal(t, 2, n)
-		require.Equal(t, buf1[:n], []byte("--"))
+		require.Equal(t, []byte("--"), buf1[:n])
 		require.NoError(t, err)
 
 		n, err = r2.Read(buf2)
 		require.Equal(t, 2, n)
-		require.Equal(t, buf2[:n], []byte("--"))
+		require.Equal(t, []byte("--"), buf2[:n])
 		require.NoError(t, err)
 
 		n, err = r3.Read(buf3)
 		require.Equal(t, 2, n)
-		require.Equal(t, buf3[:n], []byte("--"))
+		require.Equal(t, []byte("--"), buf3[:n])
 		require.NoError(t, err)
 
 		n, err = r1.Read(buf1)
 		require.Equal(t, 0, n)
-		require.Equal(t, buf1[:n], []byte(""))
+		require.Equal(t, []byte(""), buf1[:n])
 		require.ErrorIs(t, err, io.EOF)
 
 		n, err = r2.Read(buf2)
 		require.Equal(t, 0, n)
-		require.Equal(t, buf2[:n], []byte(""))
+		require.Equal(t, []byte(""), buf2[:n])
 		require.ErrorIs(t, err, io.EOF)
 
 		n, err = r3.Read(buf3)
 		require.Equal(t, 0, n)
-		require.Equal(t, buf3[:n], []byte(""))
+		require.Equal(t, []byte(""), buf3[:n])
 		require.ErrorIs(t, err, io.EOF)
 	})
 }

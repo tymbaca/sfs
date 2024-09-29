@@ -64,7 +64,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 	}
 
 	// If the full p read will jump over limit - shorten p
-	if r.offset+int64(len(p)) >= r.limit {
+	if r.offset+int64(len(p)) > r.limit {
 		p = p[:(r.limit - r.offset)]
 	}
 

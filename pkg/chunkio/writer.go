@@ -4,6 +4,7 @@ import (
 	"io"
 )
 
+// NewWriter creates new [Writer]
 func NewWriter(w io.WriterAt, start, limit int64) *Writer {
 	return &Writer{
 		w:      w,
@@ -32,7 +33,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	}
 
 	// If the full p read will jump over limit - shorten p
-	if w.offset+int64(len(p)) >= w.limit {
+	if w.offset+int64(len(p)) > w.limit {
 		p = p[:(w.limit - w.offset)]
 		isShortWrite = true
 	}
