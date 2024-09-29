@@ -7,16 +7,16 @@ import (
 	"os"
 	"time"
 
-	sfs_client "github.com/tymbaca/sfs/client"
 	"github.com/tymbaca/sfs/internal/chunk"
 	"github.com/tymbaca/sfs/internal/storage"
-	sfs_server "github.com/tymbaca/sfs/server"
+	sfs_client "github.com/tymbaca/sfs/pkg/client"
+	sfs_server "github.com/tymbaca/sfs/pkg/server"
 )
 
 const (
-	KiB uint64 = 1 << 10
-	MiB        = KiB << 10
-	GiB        = MiB << 10
+	KiB int64 = 1 << 10
+	MiB       = KiB << 10
+	GiB       = MiB << 10
 )
 
 type logStorage struct{}
@@ -41,13 +41,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	size := getFileSize(f1)
+
 	// f2, err := os.Open("cmd/input/small2.txt")
 	// if err != nil {
 	// 	panic(err)
 	// }
 
 	client := sfs_client.NewClient("localhost:6886", 32*MiB)
-	err = client.Upload(ctx, "small1", f1)
+	err = client.UploadReaderAt(ctx, "small1", f1, size)
 	if err != nil {
 		panic(err)
 	}
@@ -57,4 +60,13 @@ func main() {
 	// }
 
 	time.Sleep(1000 * time.Millisecond)
+}
+
+func getFileSize(f *os.File) int64 {
+	stat, err := f.Stat()
+	if err != nil {
+		panic(err)
+	}
+
+	return stat.Size()
 }

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strconv"
@@ -26,7 +27,7 @@ func (s *FileStorage) StoreChunk(ctx context.Context, chunk chunk.Chunk) error {
 		return fmt.Errorf("can't create file for %s/%d: %w", chunk.Filename, chunk.ID, err)
 	}
 
-	if _, err = f.Write(chunk.Body); err != nil {
+	if _, err = io.Copy(f, chunk.Body); err != nil {
 		return fmt.Errorf("can't write to file for %s/%d: %w", chunk.Filename, chunk.ID, err)
 	}
 

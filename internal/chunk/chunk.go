@@ -10,7 +10,7 @@ type Chunk struct {
 	ID       uint64
 	Filename string
 	Size     uint64
-	Body     []byte
+	Body     io.Reader
 }
 
 const _delimiter = '$'
@@ -48,7 +48,7 @@ func WriteChunk(w io.Writer, chunk Chunk) error {
 		return fmt.Errorf("can't write chunk size: %w", err)
 	}
 
-	if _, err := w.Write(chunk.Body); err != nil {
+	if _, err := io.Copy(w, chunk.Body); err != nil {
 		return fmt.Errorf("can't write chunk body: %w", err)
 	}
 
@@ -91,20 +91,10 @@ func ReadChunk(r io.Reader) (Chunk, error) {
 		return Chunk{}, fmt.Errorf("can't read body size from chunk: %w", err)
 	}
 
-	body := make([]byte, bodySize)
-	n, err = io.ReadFull(r, body)
-	if err != nil {
-		return Chunk{}, fmt.Errorf("can't read body from chunk: %w", err)
-	}
-
-	if n < int(bodySize) {
-		return Chunk{}, fmt.Errorf("can't read body from chunk: got (%d) less then expected (%d)", n, bodySize)
-	}
-
 	return Chunk{
 		ID:       id,
 		Filename: string(filename),
 		Size:     bodySize,
-		Body:     body,
+		Body:     r,
 	}, nil
 }
