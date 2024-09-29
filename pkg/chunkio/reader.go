@@ -4,7 +4,7 @@ import (
 	"io"
 )
 
-func SplitFile(r io.ReaderAt, totalSize, chunkSize int64) ([]*Reader, error) {
+func Split(r io.ReaderAt, totalSize, chunkSize int64) []*Reader {
 	offset := int64(0)
 	chunks := make([]*Reader, 0, totalSize/chunkSize+1)
 
@@ -19,7 +19,7 @@ func SplitFile(r io.ReaderAt, totalSize, chunkSize int64) ([]*Reader, error) {
 		offset += chunkSize
 	}
 
-	return chunks, nil
+	return chunks
 }
 
 // Four different cases:

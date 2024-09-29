@@ -8,72 +8,226 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReader(t *testing.T) {
-	sr := strings.NewReader("1----2----3----")
-	r1 := NewReader(sr, 0, 5)
-	r2 := NewReader(sr, 5, 10)
-	r3 := NewReader(sr, 10, 15)
+func TestSplit(t *testing.T) {
+	t.Run("normal order", func(t *testing.T) {
+		sr := strings.NewReader("1----2----3----")
+		t.Parallel()
 
-	t.Run("1st chunk", func(t *testing.T) {
-		buf := make([]byte, 3)
-		n, err := r1.Read(buf)
+		rs := Split(sr, sr.Size(), 5)
 
-		require.Equal(t, 3, n)
-		require.Equal(t, buf[:n], []byte("1--"))
-		require.NoError(t, err)
+		require.Len(t, rs, 3)
 
-		n, err = r1.Read(buf)
+		r1, r2, r3 := rs[0], rs[1], rs[2]
 
-		require.Equal(t, 2, n)
-		require.Equal(t, buf[:n], []byte("--"))
-		require.NoError(t, err)
+		t.Run("1st chunk", func(t *testing.T) {
+			buf := make([]byte, 3)
+			n, err := r1.Read(buf)
 
-		n, err = r1.Read(buf)
+			require.Equal(t, 3, n)
+			require.Equal(t, buf[:n], []byte("1--"))
+			require.NoError(t, err)
 
-		require.Equal(t, 0, n)
-		require.Equal(t, buf[:n], []byte(""))
-		require.ErrorIs(t, err, io.EOF)
+			n, err = r1.Read(buf)
+
+			require.Equal(t, 2, n)
+			require.Equal(t, buf[:n], []byte("--"))
+			require.NoError(t, err)
+
+			n, err = r1.Read(buf)
+
+			require.Equal(t, 0, n)
+			require.Equal(t, buf[:n], []byte(""))
+			require.ErrorIs(t, err, io.EOF)
+		})
+
+		t.Run("2nd chunk", func(t *testing.T) {
+			buf := make([]byte, 3)
+			n, err := r2.Read(buf)
+
+			require.Equal(t, 3, n)
+			require.Equal(t, buf[:n], []byte("2--"))
+			require.NoError(t, err)
+
+			n, err = r2.Read(buf)
+
+			require.Equal(t, 2, n)
+			require.Equal(t, buf[:n], []byte("--"))
+			require.NoError(t, err)
+
+			n, err = r2.Read(buf)
+
+			require.Equal(t, 0, n)
+			require.Equal(t, buf[:n], []byte(""))
+			require.ErrorIs(t, err, io.EOF)
+		})
+
+		t.Run("3rd chunk", func(t *testing.T) {
+			buf := make([]byte, 3)
+			n, err := r3.Read(buf)
+
+			require.Equal(t, 3, n)
+			require.Equal(t, buf[:n], []byte("3--"))
+			require.NoError(t, err)
+
+			n, err = r3.Read(buf)
+
+			require.Equal(t, 2, n)
+			require.Equal(t, buf[:n], []byte("--"))
+			require.NoError(t, err)
+
+			n, err = r3.Read(buf)
+
+			require.Equal(t, 0, n)
+			require.Equal(t, buf[:n], []byte(""))
+			require.ErrorIs(t, err, io.EOF)
+		})
 	})
+	t.Run("last chunk not full", func(t *testing.T) {
+		sr := strings.NewReader("1----2----3--")
+		t.Parallel()
 
-	t.Run("2nd chunk", func(t *testing.T) {
-		buf := make([]byte, 3)
-		n, err := r2.Read(buf)
+		rs := Split(sr, sr.Size(), 5)
 
-		require.Equal(t, 3, n)
-		require.Equal(t, buf[:n], []byte("2--"))
-		require.NoError(t, err)
+		require.Len(t, rs, 3)
 
-		n, err = r2.Read(buf)
+		_, _, r3 := rs[0], rs[1], rs[2]
 
-		require.Equal(t, 2, n)
-		require.Equal(t, buf[:n], []byte("--"))
-		require.NoError(t, err)
-
-		n, err = r2.Read(buf)
-
-		require.Equal(t, 0, n)
-		require.Equal(t, buf[:n], []byte(""))
-		require.ErrorIs(t, err, io.EOF)
-	})
-
-	t.Run("3rd chunk", func(t *testing.T) {
-		buf := make([]byte, 3)
+		buf := make([]byte, 100)
 		n, err := r3.Read(buf)
-
-		require.Equal(t, 3, n)
+		require.NoError(t, err)
+		require.Equal(t, 3, int(n)) // last readers must provide 3 bytes
 		require.Equal(t, buf[:n], []byte("3--"))
+	})
+}
+
+func TestReader(t *testing.T) {
+	t.Run("normal order", func(t *testing.T) {
+		sr := strings.NewReader("1----2----3----")
+		t.Parallel()
+
+		r1 := NewReader(sr, 0, 5)
+		r2 := NewReader(sr, 5, 10)
+		r3 := NewReader(sr, 10, 15)
+
+		t.Run("1st chunk", func(t *testing.T) {
+			buf := make([]byte, 3)
+			n, err := r1.Read(buf)
+
+			require.Equal(t, 3, n)
+			require.Equal(t, buf[:n], []byte("1--"))
+			require.NoError(t, err)
+
+			n, err = r1.Read(buf)
+
+			require.Equal(t, 2, n)
+			require.Equal(t, buf[:n], []byte("--"))
+			require.NoError(t, err)
+
+			n, err = r1.Read(buf)
+
+			require.Equal(t, 0, n)
+			require.Equal(t, buf[:n], []byte(""))
+			require.ErrorIs(t, err, io.EOF)
+		})
+
+		t.Run("2nd chunk", func(t *testing.T) {
+			buf := make([]byte, 3)
+			n, err := r2.Read(buf)
+
+			require.Equal(t, 3, n)
+			require.Equal(t, buf[:n], []byte("2--"))
+			require.NoError(t, err)
+
+			n, err = r2.Read(buf)
+
+			require.Equal(t, 2, n)
+			require.Equal(t, buf[:n], []byte("--"))
+			require.NoError(t, err)
+
+			n, err = r2.Read(buf)
+
+			require.Equal(t, 0, n)
+			require.Equal(t, buf[:n], []byte(""))
+			require.ErrorIs(t, err, io.EOF)
+		})
+
+		t.Run("3rd chunk", func(t *testing.T) {
+			buf := make([]byte, 3)
+			n, err := r3.Read(buf)
+
+			require.Equal(t, 3, n)
+			require.Equal(t, buf[:n], []byte("3--"))
+			require.NoError(t, err)
+
+			n, err = r3.Read(buf)
+
+			require.Equal(t, 2, n)
+			require.Equal(t, buf[:n], []byte("--"))
+			require.NoError(t, err)
+
+			n, err = r3.Read(buf)
+
+			require.Equal(t, 0, n)
+			require.Equal(t, buf[:n], []byte(""))
+			require.ErrorIs(t, err, io.EOF)
+		})
+	})
+
+	t.Run("concurrent order", func(t *testing.T) {
+		sr := strings.NewReader("1----2----3----")
+		t.Parallel()
+
+		r1 := NewReader(sr, 0, 5)
+		r2 := NewReader(sr, 5, 10)
+		r3 := NewReader(sr, 10, 15)
+
+		buf1 := make([]byte, 3)
+		buf2 := make([]byte, 3)
+		buf3 := make([]byte, 3)
+
+		n, err := r1.Read(buf1)
+		require.Equal(t, 3, n)
+		require.Equal(t, buf1[:n], []byte("1--"))
 		require.NoError(t, err)
 
-		n, err = r3.Read(buf)
+		n, err = r2.Read(buf2)
+		require.Equal(t, 3, n)
+		require.Equal(t, buf2[:n], []byte("2--"))
+		require.NoError(t, err)
 
+		n, err = r3.Read(buf3)
+		require.Equal(t, 3, n)
+		require.Equal(t, buf3[:n], []byte("3--"))
+		require.NoError(t, err)
+
+		n, err = r1.Read(buf1)
 		require.Equal(t, 2, n)
-		require.Equal(t, buf[:n], []byte("--"))
+		require.Equal(t, buf1[:n], []byte("--"))
 		require.NoError(t, err)
 
-		n, err = r3.Read(buf)
+		n, err = r2.Read(buf2)
+		require.Equal(t, 2, n)
+		require.Equal(t, buf2[:n], []byte("--"))
+		require.NoError(t, err)
 
+		n, err = r3.Read(buf3)
+		require.Equal(t, 2, n)
+		require.Equal(t, buf3[:n], []byte("--"))
+		require.NoError(t, err)
+
+		n, err = r1.Read(buf1)
 		require.Equal(t, 0, n)
-		require.Equal(t, buf[:n], []byte(""))
+		require.Equal(t, buf1[:n], []byte(""))
+		require.ErrorIs(t, err, io.EOF)
+
+		n, err = r2.Read(buf2)
+		require.Equal(t, 0, n)
+		require.Equal(t, buf2[:n], []byte(""))
+		require.ErrorIs(t, err, io.EOF)
+
+		n, err = r3.Read(buf3)
+		require.Equal(t, 0, n)
+		require.Equal(t, buf3[:n], []byte(""))
 		require.ErrorIs(t, err, io.EOF)
 	})
 }
