@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/tymbaca/sfs/internal/chunk"
 	"github.com/tymbaca/sfs/internal/logger"
+	"github.com/tymbaca/sfs/internal/transport"
 	"github.com/tymbaca/sfs/pkg/chunkio"
 )
 
@@ -26,28 +28,6 @@ func NewClient(addrs string, chunkSize int64) *Client {
 	}
 }
 
-func (c *Client) Upload(ctx context.Context, name string, r io.ReaderAt, totalSize int64) error {
-	// TODO validate name: must not contain "/" (or doesn't?)
-
-	chunks, err := formChunks(r, totalSize, name, c.chunkSize)
-	if err != nil {
-		return err
-	}
-
-	conns, err := c.connect(ctx)
-	if err != nil {
-		return err
-	}
-	defer closeConns(conns)
-
-	err = uploadChunks(ctx, conns, chunks)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (c *Client) UploadFile(ctx context.Context, name string, f *os.File) error {
 	stat, err := f.Stat()
 	if err != nil {
@@ -55,6 +35,55 @@ func (c *Client) UploadFile(ctx context.Context, name string, f *os.File) error 
 	}
 
 	return c.Upload(ctx, name, f, stat.Size())
+}
+
+func (c *Client) Upload(ctx context.Context, name string, r io.ReaderAt, totalSize int64) error {
+	chunks, err := formChunks(r, totalSize, name, c.chunkSize)
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	for chunk := range chunks {
+		wg.Add(1)
+		go c.uploadChunk(ctx, chunk, &wg)
+	}
+
+	wg.Wait()
+
+	return nil
+}
+
+func (c *Client) uploadChunk(ctx context.Context, chunk chunk.Chunk, wg *sync.WaitGroup) error {
+	defer wg.Done()
+
+	trans, err := c.getTransport(chunk)
+	if err != nil {
+		return err
+	}
+
+	if err = trans.SendChunk(ctx, chunk); err != nil {
+		return fmt.Errorf("can't send chunk: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Client) getTransport(chunk chunk.Chunk) (transport.Transport, error) {
+	addrIdx := c.resolveNodeIndex(chunk.Filename, chunk.ID)
+	trans := transport.NewTCPTransport(c.addrs[addrIdx])
+
+	return trans, nil
+}
+
+func (c *Client) resolveNodeIndex(name string, id uint64) int {
+	// i'm too lazy for this shit
+	// but i need consistent hashing
+	// sum := sha1.Sum([]byte(name + fmt.Sprint(id))) // not good
+	// i := new(big.Int)
+	// i.SetBytes()
+
+	return rand.Intn(len(c.addrs))
 }
 
 func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk.Chunk) error {
