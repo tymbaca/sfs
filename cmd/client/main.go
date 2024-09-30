@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"time"
 
 	"github.com/tymbaca/sfs/internal/chunk"
@@ -42,15 +43,13 @@ func main() {
 		panic(err)
 	}
 
-	size := getFileSize(f1)
-
 	// f2, err := os.Open("cmd/input/small2.txt")
 	// if err != nil {
 	// 	panic(err)
 	// }
 
 	client := sfs_client.NewClient("localhost:6886", 32*MiB)
-	err = client.UploadReaderAt(ctx, "small1", f1, size)
+	err = client.UploadFile(ctx, path.Base(f1.Name()), f1)
 	if err != nil {
 		panic(err)
 	}

@@ -53,8 +53,10 @@ func (s *Server) unqueue() {
 }
 
 func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
+	fmt.Println("handling conn")
 	defer s.unqueue()
 	for {
+		fmt.Println("handling conn iter")
 		// TODO add timeout
 		chunk, err := chunk.ReadChunk(conn)
 		if err != nil {

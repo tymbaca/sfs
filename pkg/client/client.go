@@ -2,10 +2,10 @@ package sfs
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strings"
 	"sync"
 
@@ -25,8 +25,10 @@ func NewClient(addrs string, chunkSize int64) *Client {
 	}
 }
 
-func (c *Client) UploadReaderAt(ctx context.Context, name string, r io.ReaderAt, size int64) error {
-	chunks, err := formChunksReaderAt(r, size, name, c.chunkSize)
+func (c *Client) Upload(ctx context.Context, name string, r io.ReaderAt, totalSize int64) error {
+	// TODO validate name: must not contain "/" (or doesn't?)
+
+	chunks, err := formChunks(r, totalSize, name, c.chunkSize)
 	if err != nil {
 		return err
 	}
@@ -46,25 +48,13 @@ func (c *Client) UploadReaderAt(ctx context.Context, name string, r io.ReaderAt,
 	return nil
 }
 
-func (c *Client) Upload(ctx context.Context, name string, r io.Reader) error {
-	chunks, err := formChunks(r, name, c.chunkSize)
+func (c *Client) UploadFile(ctx context.Context, name string, f *os.File) error {
+	stat, err := f.Stat()
 	if err != nil {
-		return err
+		return fmt.Errorf("can't get file stats: %w", err)
 	}
 
-	conns, err := c.connect(ctx)
-	if err != nil {
-		return err
-	}
-	defer closeConns(conns)
-
-	fmt.Println("starting to upload chunks of file:", name)
-	err = uploadChunks(ctx, conns, chunks)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.Upload(ctx, name, f, stat.Size())
 }
 
 func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk.Chunk) error {
@@ -76,6 +66,7 @@ func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk.Chunk
 		go func() {
 			defer wg.Done()
 			for chk := range chunks {
+				fmt.Printf("writing chunk: %s\n", chk)
 				err := chunk.WriteChunk(conn, chk)
 				if err != nil {
 					panic(err)
@@ -104,39 +95,7 @@ func (c *Client) connect(_ context.Context) ([]net.Conn, error) {
 	return conns, nil
 }
 
-func formChunks(r io.Reader, name string, size int64) (<-chan chunk.Chunk, error) {
-	if size < 1 {
-		panic("can't split byte non-positive size")
-	}
-
-	ch := make(chan chunk.Chunk)
-	go func() {
-		defer close(ch)
-		for id := 0; ; id++ {
-			// buf := make([]byte, size)
-			// n, err := r.Read(buf)
-			// if err != nil {
-			// 	if errors.Is(err, io.EOF) {
-			// 		break
-			// 	}
-			//
-			// 	panic("shit happens")
-			// }
-			panic(errors.New("not implemented"))
-			//
-			// ch <- chunk.Chunk{
-			// 	ID:       uint64(id),
-			// 	Filename: name,
-			// 	Size:     uint64(n),
-			// 	Body:     buf[:n],
-			// }
-		}
-	}()
-
-	return ch, nil
-}
-
-func formChunksReaderAt(r io.ReaderAt, totalSize int64, name string, size int64) (<-chan chunk.Chunk, error) {
+func formChunks(r io.ReaderAt, totalSize int64, name string, size int64) (<-chan chunk.Chunk, error) {
 	if size < 1 {
 		panic("can't split byte non-positive size")
 	}

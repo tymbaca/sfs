@@ -95,6 +95,6 @@ func ReadChunk(r io.Reader) (Chunk, error) {
 		ID:       id,
 		Filename: string(filename),
 		Size:     bodySize,
-		Body:     r,
+		Body:     io.LimitReader(r, int64(bodySize)), // to not suck in next chunks
 	}, nil
 }
