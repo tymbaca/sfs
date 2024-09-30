@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 
 	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/logger"
 )
 
 type Server struct {
@@ -53,10 +53,10 @@ func (s *Server) unqueue() {
 }
 
 func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
-	fmt.Println("handling conn")
+	logger.Log("handling conn")
 	defer s.unqueue()
 	for {
-		fmt.Println("handling conn iter")
+		logger.Log("handling conn iter")
 		// TODO add timeout
 		chunk, err := chunk.ReadChunk(conn)
 		if err != nil {
@@ -67,7 +67,7 @@ func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
 		}
 
 		if err := s.storage.StoreChunk(ctx, chunk); err != nil {
-			log.Printf("ERROR: can't store chunk: %s", err)
+			logger.Logf("ERROR: can't store chunk: %s", err)
 		}
 	}
 }

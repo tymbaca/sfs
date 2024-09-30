@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/logger"
 	"github.com/tymbaca/sfs/pkg/chunkio"
 )
 
@@ -39,7 +40,6 @@ func (c *Client) Upload(ctx context.Context, name string, r io.ReaderAt, totalSi
 	}
 	defer closeConns(conns)
 
-	fmt.Println("starting to upload chunks of file:", name)
 	err = uploadChunks(ctx, conns, chunks)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk.Chunk
 		go func() {
 			defer wg.Done()
 			for chk := range chunks {
-				fmt.Printf("writing chunk: %s\n", chk)
+				logger.Logf("writing chunk: %s\n", chk)
 				err := chunk.WriteChunk(conn, chk)
 				if err != nil {
 					panic(err)

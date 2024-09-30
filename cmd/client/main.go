@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"path"
 	"time"
 
 	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/logger"
 	"github.com/tymbaca/sfs/internal/storage"
 	sfs_client "github.com/tymbaca/sfs/pkg/client"
 	sfs_server "github.com/tymbaca/sfs/pkg/server"
@@ -23,7 +23,7 @@ const (
 type logStorage struct{}
 
 func (s logStorage) StoreChunk(ctx context.Context, chunk chunk.Chunk) error {
-	fmt.Printf("server: chunk: %s\n", chunk)
+	logger.Logf("server: chunk: %s\n", chunk)
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
@@ -48,7 +48,7 @@ func main() {
 	// 	panic(err)
 	// }
 
-	client := sfs_client.NewClient("localhost:6886", 32*MiB)
+	client := sfs_client.NewClient("localhost:6886", 64*MiB)
 	err = client.UploadFile(ctx, path.Base(f1.Name()), f1)
 	if err != nil {
 		panic(err)
