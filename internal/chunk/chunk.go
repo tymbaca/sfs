@@ -13,7 +13,7 @@ type Chunk struct {
 	Body     io.Reader
 }
 
-const _delimiter = '$'
+const _delimiter = '*'
 
 const chunkFmt = `{
         ID: %d,
@@ -27,7 +27,7 @@ func (ch Chunk) String() string {
 }
 
 func WriteChunk(w io.Writer, chunk Chunk) error {
-	if _, err := w.Write([]byte("$")); err != nil {
+	if _, err := w.Write([]byte{_delimiter}); err != nil {
 		return fmt.Errorf("can't write delimiter: %w", err)
 	}
 
@@ -62,7 +62,7 @@ func ReadChunk(r io.Reader) (Chunk, error) {
 		return Chunk{}, fmt.Errorf("can't read first byte of chunk: %w", err)
 	}
 
-	if delim[0] != '$' {
+	if delim[0] != _delimiter {
 		return Chunk{}, fmt.Errorf("incorrect delimiter, expected: '%s', got '%s'", string(_delimiter), delim)
 	}
 
