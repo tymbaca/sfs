@@ -112,8 +112,24 @@ If there is no chunks in the node, the `count` will be `0` and there will be no 
 <code><msg_size>[<msg>]
 ```
 
+Where:
+- `msg_size` is the little-endian uint64 representing the size of following `msg`. If `msg` not present, the `msg_size` will be `0`
+
+----------------------------------
+
+## Invalid Request
+If the request will not match to any of specified requests, the server will return `INVALID_REQ` code in following format:
+
+```
+<code><msg_size>[<msg>]
+```
+
+Where:
+- `msg_size` is the little-endian uint64 representing the size of following `msg`. If `msg` not present, the `msg_size` will be `0`
 
 ## Status Codes
+Status code is a little-endian uint64 with following meanings:
 - `10` - OK
 - `20` - NOT_FOUND
-- `30` - FAILED
+- `21` - INVALID_REQ
+- `30` - INTERNAL

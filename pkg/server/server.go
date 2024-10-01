@@ -2,12 +2,12 @@ package sfs
 
 import (
 	"context"
-	"errors"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 
-	"github.com/tymbaca/sfs/internal/chunks"
+	"github.com/tymbaca/sfs/internal/codes"
 	"github.com/tymbaca/sfs/internal/logger"
 )
 
@@ -38,10 +38,72 @@ func (s *Server) Run() error {
 		if err != nil {
 			panic(err)
 		}
+		conn.Close()
 
 		s.queue()
-		go s.handleConn(ctx, conn)
+		go func() {
+			err := s.handleConn(ctx, conn)
+			if err != nil {
+				logger.Logf("can't handle conn: %s", err)
+				return
+			}
+		}()
 	}
+}
+
+func (s *Server) handleConn(_ context.Context, conn net.Conn) error {
+	logger.Log("handling conn")
+	defer s.unqueue()
+
+	for {
+		head, err := peekByte(conn)
+		if err != nil {
+			return err
+		}
+
+		switch head {
+		case '*':
+		case '/':
+		case '%':
+		default:
+			return writeCodeMsg(conn, codes.InvalidReq, "incorrect head character")
+		}
+	}
+}
+
+func peekByte(r io.Reader) (byte, error) {
+	p := make([]byte, 1)
+	_, err := r.Read(p)
+	if err != nil {
+		return 0, fmt.Errorf("can't peek first byte: %w", err)
+	}
+
+	return p[0], nil
+}
+
+func writeCode(w io.Writer, code uint64) error {
+	if err := binary.Write(w, binary.LittleEndian, code); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func writeCodeMsg(w io.Writer, code uint64, msg string) error {
+	if err := binary.Write(w, binary.LittleEndian, code); err != nil {
+		return err
+	}
+
+	if err := binary.Write(w, binary.LittleEndian, uint64(len(msg))); err != nil {
+		return err
+	}
+
+	_, err := w.Write([]byte(msg))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Server) queue() {
@@ -50,24 +112,4 @@ func (s *Server) queue() {
 
 func (s *Server) unqueue() {
 	<-s.connPool
-}
-
-func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
-	logger.Log("handling conn")
-	defer s.unqueue()
-	for {
-		logger.Log("handling conn iter")
-		// TODO add timeout
-		chunk, err := chunks.RecvChunk(conn)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			panic(err)
-		}
-
-		if err := s.storage.StoreChunk(ctx, chunk); err != nil {
-			logger.Logf("ERROR: can't store chunk: %s", err)
-		}
-	}
 }

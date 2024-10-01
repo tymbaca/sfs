@@ -72,13 +72,9 @@ func RecvChunk(r io.Reader) (Chunk, error) {
 	}
 
 	filename := make([]byte, filenameSize)
-	n, err := r.Read(filename)
+	_, err = io.ReadFull(r, filename)
 	if err != nil {
 		return Chunk{}, fmt.Errorf("can't read filename from chunk: %w", err)
-	}
-
-	if n < int(filenameSize) {
-		return Chunk{}, fmt.Errorf("can't read filename from chunk: got (%d) less then expected (%d)", n, filenameSize)
 	}
 
 	var id uint64
