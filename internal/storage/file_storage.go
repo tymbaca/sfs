@@ -8,7 +8,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/chunks"
 )
 
 type FileStorage struct {
@@ -21,7 +21,7 @@ func NewFileStorage(baseDir string) *FileStorage {
 	}
 }
 
-func (s *FileStorage) StoreChunk(ctx context.Context, chunk chunk.Chunk) error {
+func (s *FileStorage) StoreChunk(ctx context.Context, chunk chunks.Chunk) error {
 	f, err := createFile(path.Join(s.baseDir, chunk.Filename, strconv.Itoa(int(chunk.ID))))
 	if err != nil {
 		return fmt.Errorf("can't create file for %s/%d: %w", chunk.Filename, chunk.ID, err)

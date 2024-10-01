@@ -10,8 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tymbaca/sfs/internal/chunk"
-	"github.com/tymbaca/sfs/internal/logger"
+	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/transport"
 	"github.com/tymbaca/sfs/pkg/chunkio"
 )
@@ -54,13 +53,14 @@ func (c *Client) Upload(ctx context.Context, name string, r io.ReaderAt, totalSi
 	return nil
 }
 
-func (c *Client) uploadChunk(ctx context.Context, chunk chunk.Chunk, wg *sync.WaitGroup) error {
+func (c *Client) uploadChunk(ctx context.Context, chunk chunks.Chunk, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
 	trans, err := c.getTransport(chunk)
 	if err != nil {
-		return err
+		return fmt.Errorf("can't get transport: %w", err)
 	}
+	defer trans.Close()
 
 	if err = trans.SendChunk(ctx, chunk); err != nil {
 		return fmt.Errorf("can't send chunk: %w", err)
@@ -69,7 +69,7 @@ func (c *Client) uploadChunk(ctx context.Context, chunk chunk.Chunk, wg *sync.Wa
 	return nil
 }
 
-func (c *Client) getTransport(chunk chunk.Chunk) (transport.Transport, error) {
+func (c *Client) getTransport(chunk chunks.Chunk) (transport.Transport, error) {
 	addrIdx := c.resolveNodeIndex(chunk.Filename, chunk.ID)
 	trans := transport.NewTCPTransport(c.addrs[addrIdx])
 
@@ -77,7 +77,7 @@ func (c *Client) getTransport(chunk chunk.Chunk) (transport.Transport, error) {
 }
 
 func (c *Client) resolveNodeIndex(name string, id uint64) int {
-	// i'm too lazy for this shit
+	// TODO i'm too lazy for this shit
 	// but i need consistent hashing
 	// sum := sha1.Sum([]byte(name + fmt.Sprint(id))) // not good
 	// i := new(big.Int)
@@ -86,56 +86,18 @@ func (c *Client) resolveNodeIndex(name string, id uint64) int {
 	return rand.Intn(len(c.addrs))
 }
 
-func uploadChunks(_ context.Context, conns []net.Conn, chunks <-chan chunk.Chunk) error {
-	var wg sync.WaitGroup
-	wg.Add(len(conns))
-
-	for _, conn := range conns {
-		conn := conn
-		go func() {
-			defer wg.Done()
-			for chk := range chunks {
-				logger.Logf("writing chunk: %s\n", chk)
-				err := chunk.WriteChunk(conn, chk)
-				if err != nil {
-					panic(err)
-				}
-			}
-		}()
-	}
-
-	wg.Wait()
-
-	return nil
-}
-
-func (c *Client) connect(_ context.Context) ([]net.Conn, error) {
-	conns := make([]net.Conn, 0, len(c.addrs))
-	for _, addr := range c.addrs {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			closeConns(conns)
-			return nil, err
-		}
-
-		conns = append(conns, conn)
-	}
-
-	return conns, nil
-}
-
-func formChunks(r io.ReaderAt, totalSize int64, name string, size int64) (<-chan chunk.Chunk, error) {
+func formChunks(r io.ReaderAt, totalSize int64, name string, size int64) (<-chan chunks.Chunk, error) {
 	if size < 1 {
 		panic("can't split byte non-positive size")
 	}
 
-	chunks := chunkio.Split(r, totalSize, size)
+	chks := chunkio.Split(r, totalSize, size)
 
-	ch := make(chan chunk.Chunk)
+	ch := make(chan chunks.Chunk)
 	go func() {
 		defer close(ch)
-		for id, chnk := range chunks {
-			ch <- chunk.Chunk{
+		for id, chnk := range chks {
+			ch <- chunks.Chunk{
 				ID:       uint64(id),
 				Filename: name,
 				Size:     uint64(chnk.Size()),

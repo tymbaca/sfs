@@ -7,7 +7,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/logger"
 )
 
@@ -58,7 +58,7 @@ func (s *Server) handleConn(ctx context.Context, conn net.Conn) {
 	for {
 		logger.Log("handling conn iter")
 		// TODO add timeout
-		chunk, err := chunk.ReadChunk(conn)
+		chunk, err := chunks.RecvChunk(conn)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break

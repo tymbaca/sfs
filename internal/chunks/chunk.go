@@ -1,4 +1,4 @@
-package chunk
+package chunks
 
 import (
 	"encoding/binary"
@@ -26,7 +26,7 @@ func (ch Chunk) String() string {
 	return fmt.Sprintf(chunkFmt, ch.ID, ch.Filename, ch.Size, ch.Body)
 }
 
-func WriteChunk(w io.Writer, chunk Chunk) error {
+func SendChunk(w io.Writer, chunk Chunk) error {
 	if _, err := w.Write([]byte{_delimiter}); err != nil {
 		return fmt.Errorf("can't write delimiter: %w", err)
 	}
@@ -55,7 +55,7 @@ func WriteChunk(w io.Writer, chunk Chunk) error {
 	return nil
 }
 
-func ReadChunk(r io.Reader) (Chunk, error) {
+func RecvChunk(r io.Reader) (Chunk, error) {
 	delim := make([]byte, 1)
 	_, err := r.Read(delim)
 	if err != nil {

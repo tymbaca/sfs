@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/transport"
 	"golang.org/x/sync/errgroup"
 )
@@ -19,7 +19,7 @@ func (c *Client) Download(ctx context.Context, name string) (io.Reader, int64, e
 	}
 
 	// Receive all chunks
-	chunks := make([]chunk.Chunk, len(idToAddr))
+	chunks := make([]chunks.Chunk, len(idToAddr))
 	var g errgroup.Group
 	for id, addr := range idToAddr {
 		id, addr := id, addr

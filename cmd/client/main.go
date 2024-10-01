@@ -7,7 +7,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/tymbaca/sfs/internal/chunk"
+	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/logger"
 	"github.com/tymbaca/sfs/internal/storage"
 	sfs_client "github.com/tymbaca/sfs/pkg/client"
@@ -22,7 +22,7 @@ const (
 
 type logStorage struct{}
 
-func (s logStorage) StoreChunk(ctx context.Context, chunk chunk.Chunk) error {
+func (s logStorage) StoreChunk(ctx context.Context, chunk chunks.Chunk) error {
 	logger.Logf("server: chunk: %s\n", chunk)
 	time.Sleep(100 * time.Millisecond)
 	return nil
