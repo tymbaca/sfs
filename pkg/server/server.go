@@ -38,7 +38,6 @@ func (s *Server) Run() error {
 		if err != nil {
 			panic(err)
 		}
-		conn.Close()
 
 		s.queue()
 		go func() {
@@ -51,9 +50,10 @@ func (s *Server) Run() error {
 	}
 }
 
-func (s *Server) handleConn(_ context.Context, conn net.Conn) error {
+func (s *Server) handleConn(ctx context.Context, conn net.Conn) error {
 	logger.Log("handling conn")
 	defer s.unqueue()
+	defer conn.Close()
 
 	for {
 		head, err := peekByte(conn)
@@ -63,8 +63,10 @@ func (s *Server) handleConn(_ context.Context, conn net.Conn) error {
 
 		switch head {
 		case '*':
+			return s.handleSendChunk(ctx, conn)
 		case '/':
 		case '%':
+			return s.handleListIDs(ctx, conn)
 		default:
 			return writeCodeMsg(conn, codes.InvalidReq, "incorrect head character")
 		}

@@ -13,8 +13,6 @@ type Chunk struct {
 	Body     io.Reader
 }
 
-const _delimiter = '*'
-
 const chunkFmt = `{
         ID: %d,
         Filename: %s,
@@ -27,10 +25,6 @@ func (ch Chunk) String() string {
 }
 
 func SendChunk(w io.Writer, chunk Chunk) error {
-	if _, err := w.Write([]byte{_delimiter}); err != nil {
-		return fmt.Errorf("can't write delimiter: %w", err)
-	}
-
 	// we need len of bytes, not len of utf-8 symbols, so we use [len]
 	if err := binary.Write(w, binary.LittleEndian, uint64(len(chunk.Filename))); err != nil {
 		return fmt.Errorf("can't write filename size: %w", err)
@@ -56,23 +50,13 @@ func SendChunk(w io.Writer, chunk Chunk) error {
 }
 
 func RecvChunk(r io.Reader) (Chunk, error) {
-	delim := make([]byte, 1)
-	_, err := r.Read(delim)
-	if err != nil {
-		return Chunk{}, fmt.Errorf("can't read first byte of chunk: %w", err)
-	}
-
-	if delim[0] != _delimiter {
-		return Chunk{}, fmt.Errorf("incorrect delimiter, expected: '%s', got '%s'", string(_delimiter), delim)
-	}
-
 	var filenameSize uint64
 	if err := binary.Read(r, binary.LittleEndian, &filenameSize); err != nil {
 		return Chunk{}, fmt.Errorf("can't read filename size from chunk: %w", err)
 	}
 
 	filename := make([]byte, filenameSize)
-	_, err = io.ReadFull(r, filename)
+	_, err := io.ReadFull(r, filename)
 	if err != nil {
 		return Chunk{}, fmt.Errorf("can't read filename from chunk: %w", err)
 	}

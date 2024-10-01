@@ -5,12 +5,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"net"
 
 	"github.com/tymbaca/sfs/internal/codes"
 )
 
-func (s *Server) handleListIDs(ctx context.Context, conn net.Conn) error {
+func (s *Server) handleListIDs(ctx context.Context, conn io.ReadWriter) error {
 	req, err := readListIDsReq(conn)
 	if err != nil {
 		return err

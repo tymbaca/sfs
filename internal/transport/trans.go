@@ -44,6 +44,11 @@ func (t *TCPTransport) SendChunk(ctx context.Context, chk chunks.Chunk) error {
 		return err
 	}
 
+	_, err := t.conn.Write([]byte("*"))
+	if err != nil {
+		return err
+	}
+
 	return chunks.SendChunk(t.conn, chk)
 }
 
