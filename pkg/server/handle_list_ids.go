@@ -17,6 +17,7 @@ func (s *Server) handleListIDs(ctx context.Context, conn io.ReadWriter) error {
 
 	ids, err := s.storage.ListChunkIDs(ctx, req.name)
 	if err != nil {
+		err = fmt.Errorf("can't list chunk ids from storage: %w", err)
 		writeCodeMsg(conn, codes.Internal, err.Error())
 		return err
 	}

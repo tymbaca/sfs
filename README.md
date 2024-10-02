@@ -55,7 +55,7 @@ Depends on the `code`
 #### `code` is `OK`:
 
 ```
-<code>*<filename_size><filename><id><size><data>
+<code><filename_size><filename><id><size><data>
 ```
 
 The part after `code` is identical to [send chunk request](#send-chunk)
@@ -67,7 +67,7 @@ The part after `code` is identical to [send chunk request](#send-chunk)
 ```
 
 
-#### `code` is `FAILED`:
+#### `code` is `INTERNAL`:
 
 ```
 <code><msg_size>[<msg>]
@@ -106,7 +106,7 @@ Where:
 
 If there is no chunks in the node, the `count` will be `0` and there will be no ids after that. The `code` still will be `OK`
 
-#### `code` is `FAILED`:
+#### `code` is `INTERNAL`:
 
 ```
 <code><msg_size>[<msg>]

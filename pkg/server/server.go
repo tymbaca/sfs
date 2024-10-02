@@ -55,22 +55,21 @@ func (s *Server) handleConn(ctx context.Context, conn net.Conn) error {
 	defer s.unqueue()
 	defer conn.Close()
 
-	for {
-		head, err := peekByte(conn)
-		if err != nil {
-			return err
-		}
-
-		switch head {
-		case '*':
-			return s.handleSendChunk(ctx, conn)
-		case '/':
-		case '%':
-			return s.handleListIDs(ctx, conn)
-		default:
-			return writeCodeMsg(conn, codes.InvalidReq, "incorrect head character")
-		}
+	head, err := peekByte(conn)
+	if err != nil {
+		return err
 	}
+
+	switch head {
+	case '*':
+		return s.handleSendChunk(ctx, conn)
+	case '/':
+		return s.handleRecvChunk(ctx, conn)
+	case '%':
+		return s.handleListIDs(ctx, conn)
+	}
+
+	return writeCodeMsg(conn, codes.InvalidReq, fmt.Sprintf("incorrect head character: '%c' (dec:%d)", head, head))
 }
 
 func peekByte(r io.Reader) (byte, error) {

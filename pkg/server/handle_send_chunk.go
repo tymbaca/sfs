@@ -16,8 +16,9 @@ func (s *Server) handleSendChunk(ctx context.Context, conn io.ReadWriter) error 
 	}
 
 	if err = s.storage.StoreChunk(ctx, chk); err != nil {
+		err = fmt.Errorf("can't store the chunk: %w", err)
 		writeCodeMsg(conn, codes.Internal, err.Error())
-		return fmt.Errorf("can't store the chunk: %w", err)
+		return err
 	}
 
 	return writeCodeMsg(conn, codes.Ok, "uploaded")

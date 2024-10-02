@@ -4,6 +4,7 @@ go 1.22.5
 
 require (
 	github.com/stretchr/testify v1.9.0
+	go.uber.org/multierr v1.11.0
 	golang.org/x/sync v0.8.0
 )
 

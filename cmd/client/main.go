@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -32,7 +34,7 @@ func main() {
 	ctx := context.Background()
 
 	// logStorage := logStorage{}
-	storage := storage.NewFileStorage("cmd/output/data")
+	storage := storage.NewFileStorage("cmd/output/server")
 	server := sfs_server.New(":6886", storage)
 	go func() {
 		log.Fatal(server.Run())
@@ -57,6 +59,24 @@ func main() {
 	// if err != nil {
 	// 	panic(err)
 	// }
+
+	r, cls, size, err := client.Download(ctx, path.Base(f1.Name()))
+	if err != nil {
+		panic(err)
+	}
+	defer cls()
+
+	fmt.Println(size)
+
+	out, err := os.Create(path.Join("cmd/output/client", path.Base(f1.Name())))
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = io.Copy(out, r)
+	if err != nil {
+		panic(err)
+	}
 
 	time.Sleep(1000 * time.Millisecond)
 }

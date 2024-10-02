@@ -26,3 +26,11 @@ func Logf(format string, a ...any) (n int, err error) {
 
 	return 0, nil
 }
+
+func Debug(a ...any) (n int, err error) {
+	return Log(append([]any{"DEBUG:"}, a...)...)
+}
+
+func Debugf(format string, a ...any) (n int, err error) {
+	return Logf("DEBUG: "+format, a...)
+}
