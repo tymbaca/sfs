@@ -3,10 +3,12 @@ package sfs
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/tymbaca/sfs/internal/codes"
+	"github.com/tymbaca/sfs/internal/common"
 )
 
 func (s *Server) handleListIDs(ctx context.Context, conn io.ReadWriter) error {
@@ -16,7 +18,9 @@ func (s *Server) handleListIDs(ctx context.Context, conn io.ReadWriter) error {
 	}
 
 	ids, err := s.storage.ListChunkIDs(ctx, req.name)
-	if err != nil {
+	// [common.ErrNotFound] is positive case, we must continue
+	// and send OK with id count 0
+	if err != nil && !errors.Is(err, common.ErrNotFound) {
 		err = fmt.Errorf("can't list chunk ids from storage: %w", err)
 		writeCodeMsg(conn, codes.Internal, err.Error())
 		return err

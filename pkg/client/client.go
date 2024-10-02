@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"os"
 	"strings"
 	"sync"
 
+	"github.com/spaolacci/murmur3"
 	"github.com/tymbaca/sfs/internal/chunks"
+	"github.com/tymbaca/sfs/internal/logger"
 	"github.com/tymbaca/sfs/internal/transport"
 	"github.com/tymbaca/sfs/pkg/chunkio"
 )
@@ -70,20 +71,19 @@ func (c *Client) uploadChunk(ctx context.Context, chunk chunks.Chunk, wg *sync.W
 }
 
 func (c *Client) getTransport(chunk chunks.Chunk) (transport.Transport, error) {
-	addrIdx := c.resolveNodeIndex(chunk.Filename, chunk.ID)
-	trans := transport.NewTCPTransport(c.addrs[addrIdx])
+	addr := c.resolveNodeByChunk(chunk.Filename, chunk.ID)
+	trans := transport.NewTCPTransport(addr)
 
 	return trans, nil
 }
 
-func (c *Client) resolveNodeIndex(name string, id uint64) int {
-	// TODO i'm too lazy for this shit
-	// but i need consistent hashing
-	// sum := sha1.Sum([]byte(name + fmt.Sprint(id))) // not good
-	// i := new(big.Int)
-	// i.SetBytes()
+func (c *Client) resolveNodeByChunk(name string, id uint64) string {
+	key := []byte(name + fmt.Sprint(id))
+	hash := murmur3.Sum32(key)
+	logger.Debugf("name '%s', id %d, hash = %d", name, id, hash)
 
-	return rand.Intn(len(c.addrs))
+	idx := int(hash) % len(c.addrs)
+	return c.addrs[idx]
 }
 
 func formChunks(r io.ReaderAt, totalSize int64, name string, size int64) (<-chan chunks.Chunk, error) {

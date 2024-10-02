@@ -34,41 +34,64 @@ func main() {
 	ctx := context.Background()
 
 	// logStorage := logStorage{}
-	storage := storage.NewFileStorage("cmd/output/server")
-	server := sfs_server.New(":6886", storage)
+	storage1 := storage.NewFileStorage("cmd/output/server/1st-node")
+	storage2 := storage.NewFileStorage("cmd/output/server/2nd-node")
+	storage3 := storage.NewFileStorage("cmd/output/server/3rd-node")
+
+	server1 := sfs_server.New(":6886", storage1)
 	go func() {
-		log.Fatal(server.Run())
+		log.Fatal(server1.Run())
 	}()
+
+	server2 := sfs_server.New(":6887", storage2)
+	go func() {
+		log.Fatal(server2.Run())
+	}()
+
+	server3 := sfs_server.New(":6888", storage3)
+	go func() {
+		log.Fatal(server3.Run())
+	}()
+
+	//--------------------------------------------------------------------------------------------------
 
 	f1, err := os.Open("cmd/input/odin-macos-arm64-dev-2024-09.zip")
 	if err != nil {
 		panic(err)
 	}
+	f2, err := os.Open("cmd/input/odin-macos-arm64-dev-2024-10.zip")
+	if err != nil {
+		panic(err)
+	}
 
-	// f2, err := os.Open("cmd/input/small2.txt")
-	// if err != nil {
-	// 	panic(err)
-	// }
+	client := sfs_client.NewClient("localhost:6886,localhost:6887,localhost:6888", 8*MiB)
 
-	client := sfs_client.NewClient("localhost:6886", 64*MiB)
+	// UploadFile
 	err = client.UploadFile(ctx, path.Base(f1.Name()), f1)
 	if err != nil {
 		panic(err)
 	}
-	// err = client.Upload(ctx, "small2", f2)
-	// if err != nil {
-	// 	panic(err)
-	// }
 
-	r, cls, size, err := client.Download(ctx, path.Base(f1.Name()))
+	err = client.UploadFile(ctx, path.Base(f2.Name()), f2)
+	if err != nil {
+		panic(err)
+	}
+
+	// Download
+	downloadAndSave(ctx, client, path.Base(f1.Name()))
+	downloadAndSave(ctx, client, path.Base(f2.Name()))
+}
+
+func downloadAndSave(ctx context.Context, client *sfs_client.Client, name string) {
+	r, cls, size, err := client.Download(ctx, name)
 	if err != nil {
 		panic(err)
 	}
 	defer cls()
-
 	fmt.Println(size)
+	pth := path.Join("cmd/output/client", name)
 
-	out, err := os.Create(path.Join("cmd/output/client", path.Base(f1.Name())))
+	out, err := os.Create(pth)
 	if err != nil {
 		panic(err)
 	}
@@ -77,8 +100,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	time.Sleep(1000 * time.Millisecond)
 }
 
 func getFileSize(f *os.File) int64 {

@@ -9,7 +9,6 @@ import (
 
 	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/codes"
-	"github.com/tymbaca/sfs/internal/logger"
 )
 
 type Transport interface {
@@ -99,6 +98,9 @@ func (t *TCPTransport) ListIDs(ctx context.Context, name string) ([]uint64, erro
 		}
 
 		return ids, nil
+	case codes.NotFound:
+		// If server has no chunks - it must send OK and 0 id count
+		return nil, fmt.Errorf("received NOT_FOUND code in ListIDs, but server must not use it in this endpoint, addr: '%s', filename: '%s'", t.addr, name)
 
 	case codes.Internal:
 		msg, err := readMsg(t.conn)
@@ -140,8 +142,6 @@ func (t *TCPTransport) RecvChunk(ctx context.Context, name string, id uint64) (c
 	if err != nil {
 		return chunks.Chunk{}, fmt.Errorf("can't read the code: %w", err)
 	}
-
-	logger.Debugf("got code server: %d", code)
 
 	switch code {
 	case codes.Ok:

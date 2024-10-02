@@ -44,7 +44,7 @@ func (s *FileStorage) GetChunk(ctx context.Context, name string, id uint64) (chk
 	// Open the file
 	f, err := os.Open(path.Join(s.baseDir, name, strconv.Itoa(int(id))))
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
-		return chunks.Chunk{}, nil, common.ErrChunkNotFound
+		return chunks.Chunk{}, nil, common.ErrNotFound
 	} else if err != nil {
 		return chunks.Chunk{}, nil, fmt.Errorf("can't get the chunk: %w", err)
 	}
@@ -66,7 +66,7 @@ func (s *FileStorage) GetChunk(ctx context.Context, name string, id uint64) (chk
 func (s *FileStorage) ListChunkIDs(ctx context.Context, name string) ([]uint64, error) {
 	entries, err := os.ReadDir(path.Join(s.baseDir, name))
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
-		return nil, common.ErrFileNotFound
+		return nil, common.ErrNotFound
 	} else if err != nil {
 		return nil, fmt.Errorf("can't get file's chunks IDs: %w", err)
 	}
