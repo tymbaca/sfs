@@ -133,3 +133,7 @@ Status code is a little-endian uint64 with following meanings:
 - `20` - NOT_FOUND
 - `21` - INVALID_REQ
 - `30` - INTERNAL
+
+## FAQ
+### Why are you using little-endian uint64 for everything?
+i don't know
