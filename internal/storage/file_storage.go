@@ -12,6 +12,7 @@ import (
 
 	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/common"
+	"github.com/tymbaca/sfs/internal/files"
 	"github.com/tymbaca/sfs/internal/logger"
 )
 
@@ -26,7 +27,7 @@ func NewFileStorage(baseDir string) *FileStorage {
 }
 
 func (s *FileStorage) StoreChunk(ctx context.Context, chunk chunks.Chunk) error {
-	f, err := createFile(path.Join(s.baseDir, chunk.Filename, strconv.Itoa(int(chunk.ID))))
+	f, err := files.CreateFile(path.Join(s.baseDir, chunk.Filename, strconv.Itoa(int(chunk.ID))))
 	if err != nil {
 		return fmt.Errorf("can't create file for %s/%d: %w", chunk.Filename, chunk.ID, err)
 	}
@@ -85,18 +86,4 @@ func (s *FileStorage) ListChunkIDs(ctx context.Context, name string) ([]uint64, 
 	}
 
 	return ids, nil
-}
-
-// what if concurrent write of same file-chunk?
-func createFile(fullPath string) (*os.File, error) {
-	if err := os.MkdirAll(path.Dir(fullPath), os.ModePerm); err != nil {
-		return nil, err
-	}
-
-	f, err := os.Create(fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return f, nil
 }

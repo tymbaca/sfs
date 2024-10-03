@@ -12,34 +12,33 @@ import (
 )
 
 type Server struct {
-	addr     string
-	connPool chan struct{}
-	storage  storage
+	addr    string
+	storage storage
 }
 
 func New(addr string, storage storage) *Server {
-	connPoolSize := 10
 	return &Server{
-		addr:     addr,
-		connPool: make(chan struct{}, connPoolSize),
-		storage:  storage,
+		addr:    addr,
+		storage: storage,
 	}
 }
 
-func (s *Server) Run() error {
+func (s *Server) Addr() string {
+	return s.addr
+}
+
+func (s *Server) Run(ctx context.Context) error {
 	lis, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("can't listen addr '%s': %w", s.addr, err)
 	}
 
 	for {
-		ctx := context.Background()
 		conn, err := lis.Accept()
 		if err != nil {
 			panic(err)
 		}
 
-		s.queue()
 		go func() {
 			err := s.handleConn(ctx, conn)
 			if err != nil {
@@ -52,7 +51,6 @@ func (s *Server) Run() error {
 
 func (s *Server) handleConn(ctx context.Context, conn net.Conn) error {
 	logger.Log("handling conn")
-	defer s.unqueue()
 	defer conn.Close()
 
 	head, err := peekByte(conn)
@@ -105,12 +103,4 @@ func writeCodeMsg(w io.Writer, code uint64, msg string) error {
 	}
 
 	return nil
-}
-
-func (s *Server) queue() {
-	s.connPool <- struct{}{}
-}
-
-func (s *Server) unqueue() {
-	<-s.connPool
 }

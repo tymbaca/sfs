@@ -13,13 +13,8 @@ import (
 	"github.com/tymbaca/sfs/internal/logger"
 	"github.com/tymbaca/sfs/internal/storage"
 	sfs_client "github.com/tymbaca/sfs/pkg/client"
+	"github.com/tymbaca/sfs/pkg/mem"
 	sfs_server "github.com/tymbaca/sfs/pkg/server"
-)
-
-const (
-	KiB int64 = 1 << 10
-	MiB       = KiB << 10
-	GiB       = MiB << 10
 )
 
 type logStorage struct{}
@@ -40,17 +35,17 @@ func main() {
 
 	server1 := sfs_server.New(":6886", storage1)
 	go func() {
-		log.Fatal(server1.Run())
+		log.Fatal(server1.Run(ctx))
 	}()
 
 	server2 := sfs_server.New(":6887", storage2)
 	go func() {
-		log.Fatal(server2.Run())
+		log.Fatal(server2.Run(ctx))
 	}()
 
 	server3 := sfs_server.New(":6888", storage3)
 	go func() {
-		log.Fatal(server3.Run())
+		log.Fatal(server3.Run(ctx))
 	}()
 
 	//--------------------------------------------------------------------------------------------------
@@ -64,7 +59,7 @@ func main() {
 		panic(err)
 	}
 
-	client := sfs_client.NewClient("localhost:6886,localhost:6887,localhost:6888", 8*MiB)
+	client := sfs_client.NewClient("localhost:6886,localhost:6887,localhost:6888", 8*mem.MiB)
 
 	// UploadFile
 	err = client.UploadFile(ctx, path.Base(f1.Name()), f1)

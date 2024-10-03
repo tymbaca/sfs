@@ -2,3 +2,4 @@
 .vscode
 cmd/input/**
 cmd/output/**
+bin
