@@ -59,7 +59,7 @@ func main() {
 		name := os.Args[2]
 		dstPath := os.Args[3]
 
-		dst, err := files.CreateFile(dstPath)
+		dst, err := files.Create(dstPath)
 		if err != nil {
 			fmt.Printf("error while creating destination file: %s\n", err)
 			os.Exit(1)

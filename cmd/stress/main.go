@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"time"
@@ -55,20 +54,15 @@ func worker(ctx context.Context, workerID int, client *sfs_client.Client, f *os.
 }
 
 func downloadAndSave(ctx context.Context, client *sfs_client.Client, name string) {
-	r, cls, size, err := client.Download(ctx, name)
-	if err != nil {
-		panic(err)
-	}
-	defer cls()
-	fmt.Println(size)
 	pth := path.Join("cmd/output/client", name)
 
-	out, err := files.CreateFile(pth)
+	dst, err := files.Create(pth)
 	if err != nil {
 		panic(err)
 	}
+	defer dst.Close()
 
-	_, err = io.Copy(out, r)
+	err = client.DownloadTo(ctx, dst, name)
 	if err != nil {
 		panic(err)
 	}

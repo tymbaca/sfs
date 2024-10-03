@@ -27,7 +27,7 @@ func NewFileStorage(baseDir string) *FileStorage {
 }
 
 func (s *FileStorage) StoreChunk(ctx context.Context, chunk chunks.Chunk) error {
-	f, err := files.CreateFile(path.Join(s.baseDir, chunk.Filename, strconv.Itoa(int(chunk.ID))))
+	f, err := files.Create(path.Join(s.baseDir, chunk.Filename, strconv.Itoa(int(chunk.ID))))
 	if err != nil {
 		return fmt.Errorf("can't create file for %s/%d: %w", chunk.Filename, chunk.ID, err)
 	}

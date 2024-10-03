@@ -9,18 +9,17 @@ import (
 
 	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/transport"
-	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 )
 
-func (c *Client) Download(ctx context.Context, name string) (io.Reader, func() error, int64, error) {
+func (c *Client) DownloadTo(ctx context.Context, w io.WriterAt, name string) error {
 	// Get id-addr mapping to know where to go for each chunk
 	idToAddr, err := c.resolveChunksAddrs(ctx, name)
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("can't download the file: can't resolve chunks for '%s': %w", name, err)
+		return fmt.Errorf("can't download the file: can't resolve chunks for '%s': %w", name, err)
 	}
 
-	chunks := make([]chunks.Chunk, len(idToAddr))
+	chks := make([]chunks.Chunk, len(idToAddr))
 	closes := make([]func() error, len(idToAddr))
 	var g errgroup.Group
 
@@ -32,7 +31,7 @@ func (c *Client) Download(ctx context.Context, name string) (io.Reader, func() e
 
 			chk, err := trans.RecvChunk(ctx, name, id)
 
-			chunks[id] = chk // result will be in order of IDs: 0, 1, 2, etc
+			chks[id] = chk // result will be in order of IDs: 0, 1, 2, etc
 			closes[id] = trans.Close
 			return err
 		})
@@ -40,26 +39,18 @@ func (c *Client) Download(ctx context.Context, name string) (io.Reader, func() e
 
 	err = g.Wait()
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("can't download the file: %w", err)
+		return fmt.Errorf("can't download the file: %w", err)
 	}
 
-	// Merge readers
-	readers := make([]io.Reader, 0, len(chunks))
-	size := int64(0)
-	for _, chk := range chunks {
-		size += int64(chk.Size)
-		readers = append(readers, chk.Body)
-	}
-
-	mergedReader := io.MultiReader(readers...)
-	closeFn := func() (err error) {
+	// defer close all transport connetions after download
+	defer func() {
 		for _, cls := range closes {
-			multierr.Append(err, cls())
+			_ = cls()
 		}
-		return err
-	}
+	}()
 
-	return mergedReader, closeFn, size, nil
+	// Write chunks to the writer
+	return chunks.WriteTo(w, chks...)
 }
 
 func (c *Client) resolveChunksAddrs(ctx context.Context, name string) (map[uint64]string, error) {

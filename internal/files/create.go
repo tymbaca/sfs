@@ -6,7 +6,7 @@ import (
 )
 
 // what if concurrent write of same file-chunk?
-func CreateFile(fullPath string) (*os.File, error) {
+func Create(fullPath string) (*os.File, error) {
 	if err := os.MkdirAll(path.Dir(fullPath), os.ModePerm); err != nil {
 		return nil, err
 	}
