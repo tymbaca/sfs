@@ -4,6 +4,9 @@ client:
 server:
 	go run ./cmd/server
 
+stress:
+	go run ./cmd/stress
+
 cli:
 	go build -o bin/sfs-cli ./cmd/sfs-cli
 
