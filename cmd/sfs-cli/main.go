@@ -23,7 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	client := sfs.NewClient(addrs, 2*mem.MiB)
+	client := sfs.NewClient(addrs, 64*mem.MiB)
 
 	if len(os.Args) < 2 {
 		fmt.Println("specify the operation")

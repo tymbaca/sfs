@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/tymbaca/sfs/internal/codes"
 	"github.com/tymbaca/sfs/internal/logger"
 )
@@ -50,13 +52,19 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 func (s *Server) handleConn(ctx context.Context, conn net.Conn) error {
-	logger.Log("handling conn")
 	defer conn.Close()
 
 	head, err := peekByte(conn)
 	if err != nil {
+		logger.Logf("can't read the head of request: %s", err)
 		return err
 	}
+
+	start := time.Now()
+	traceID := uuid.New()
+	defer func() {
+		logger.Logf("request '%c', trace-id '%s', time elapsed: %s", head, traceID, time.Since(start))
+	}()
 
 	switch head {
 	case '*':

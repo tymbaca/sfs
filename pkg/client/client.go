@@ -8,12 +8,14 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spaolacci/murmur3"
 	"github.com/tymbaca/sfs/internal/chunks"
 	"github.com/tymbaca/sfs/internal/logger"
 	"github.com/tymbaca/sfs/internal/transport"
 	"github.com/tymbaca/sfs/pkg/chunkio"
+	"github.com/tymbaca/sfs/pkg/mem"
 )
 
 type Client struct {
@@ -56,6 +58,11 @@ func (c *Client) Upload(ctx context.Context, name string, r io.ReaderAt, totalSi
 
 func (c *Client) uploadChunk(ctx context.Context, chunk chunks.Chunk, wg *sync.WaitGroup) error {
 	defer wg.Done()
+	start := time.Now()
+	logger.Debugf("starting to upload the %d chunk", chunk.ID)
+	defer func() {
+		logger.Debugf("uploaded %d chunk, %.2f MiB, time elapsed: %s", chunk.ID, float32(chunk.Size)/float32(mem.MiB), time.Since(start))
+	}()
 
 	trans, err := c.getTransport(chunk)
 	if err != nil {
