@@ -136,4 +136,4 @@ Status code is a little-endian uint64 with following meanings:
 
 ## FAQ
 ### Why are you using little-endian uint64 for everything?
-i don't know
+I don't know
